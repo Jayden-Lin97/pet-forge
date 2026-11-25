@@ -1,0 +1,18 @@
+<!doctype html>
+<html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>PetForge · 把熟悉的它，留在桌面</title><link rel="stylesheet" href="/static/style.css"><script src="/static/app.js" defer></script></head>
+<body><main><header><a class="brand" href="/">◌ <span>PetForge</span></a><span class="local">仅在本机运行</span></header>
+<section class="intro"><p class="eyebrow">YOUR PET. A LITTLE CLOSER.</p><h1>把熟悉的它，<br>留在桌面。</h1><p class="lead">放入照片或视频，带上你的 API Key。<br>从专属形象、自然小动作，到可以带走的桌宠。</p></section>
+<div id="demo" class="notice" hidden>当前为技术流程演示，角色由本地程序绘制，不使用真实生成服务。</div>
+<div class="columns"><form id="create"><section class="card"><div class="section-head"><span class="step">01</span><h2>认识你的小伙伴</h2></div>
+<label for="name">它叫什么？</label><input id="name" name="name" maxlength="24" placeholder="比如：团团" required>
+<label class="drop" id="drop" for="files"><span class="upload">＋</span><strong>放入照片，也可以是视频</strong><span>点击选择或拖到这里 · 最多30个</span><small>JPG / PNG / WebP · MP4 / MOV / WebM / MKV</small></label><input type="file" id="files" multiple accept="image/jpeg,image/png,image/webp,video/mp4,video/quicktime,video/webm,.mkv" hidden>
+<div id="file-list" class="file-list"></div><p class="hint">正脸、侧面和全身更有帮助。视频会抽取前12秒内的关键帧，最多12张参考图发送给模型。</p></section>
+<section class="card"><div class="section-head"><span class="step">02</span><h2>选择制作方式</h2></div>
+<label for="api-key">你的 API Key <span class="optional">仅本次使用，不保存</span></label><input type="password" id="api-key" autocomplete="off" spellcheck="false" placeholder="输入 OpenAI API Key">
+<details><summary>模型与动作设置</summary><label for="image-model">图像与动画模型</label><input id="image-model" value="gpt-image-2.6-sunburst"><label for="review-model">视觉检查模型</label><input id="review-model" value="gpt-4.1-mini"><label class="check"><input type="checkbox" id="extended"><span>增加坐起和站立动作 <small>默认制作舔毛、哈欠和打盹。更多动作会增加生成次数。</small></span></label></details>
+<p class="hint">使用支持 GIF 输出的图像模型。生成及视觉检查按模型服务计费；每项最多尝试2次，不会无限重做。</p>
+<label class="check consent"><input type="checkbox" id="consent" required><span>我有权使用这些素材，同意将选取的参考帧上传至配置的模型服务。</span></label>
+<button class="primary" id="start" type="submit">开始制作 <span>↗</span></button><p id="error" class="error" role="alert"></p></section></form>
+<aside><section class="card progress-card"><p class="eyebrow">FROM MEMORY TO COMPANY</p><div class="pet-symbol">ฅ</div><h2 id="status-title">一只小小的陪伴，<br>从这里开始。</h2><p id="status-message">完成后获得可离线使用的 Windows 桌宠压缩包。</p><progress id="progress" max="100" value="0"></progress><ol class="milestones"><li>整理照片与视频</li><li>制作形象和自然动作</li><li>检查一致性与地面接触</li><li>打包专属桌宠</li></ol><div id="result" hidden><img id="preview" alt="本次生成的桌宠动作"><a id="download" class="primary" href="#">下载 Windows 桌宠 ↗</a><small id="checksum"></small></div><button id="retry" class="secondary" hidden type="button">继续未完成的任务</button><label id="uncertain-wrap" class="check" hidden><input type="checkbox" id="uncertain"><span>我已检查 API 用量，允许重新提交结果不明的请求，可能额外计费。</span></label></section>
+<section class="notes"><h3>让它自然一点，也安心一点。</h3><p>同一动作不会相邻重复。生成素材先检查再打包；未通过会停下并保留已完成的步骤。</p><p>桌宠用于 Windows 10 / 11 64位。成品不含原始照片或 Key。模型检查也有局限，下载后仍建议检查实际动作。</p></section></aside></div>
+<section id="history" class="history"><h2>最近的制作</h2><div id="history-list"></div></section><footer>PetForge · Open source, personal by design.</footer></main></body></html>

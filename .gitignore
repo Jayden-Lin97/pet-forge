@@ -1,0 +1,16 @@
+.venv/
+.env
+.env.*
+!.env.example
+.work/
+build/
+dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+*.exe
+*.zip
+*.log
+.private/
+credentials*
+*.key

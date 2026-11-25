@@ -1,0 +1,31 @@
+using System;
+using System.IO;
+using System.Linq;
+using System.Runtime.Serialization.Json;
+using System.Windows.Media;
+using System.Windows.Media.Imaging;
+using System.Windows;
+using System.Windows.Controls;
+using System.Collections.Generic;
+
+namespace MaohaiziPet {
+public static class CustomerEditionTests {
+    static LivingReport report;
+    static void Assert(bool ok,string why){if(!ok)throw new Exception(why);}
+    static void Check(string name,Action run){var t=new TestResult{name=name};try{run();t.passed=true;report.passed++;}catch(Exception e){t.error=e.ToString();report.failed++;}report.tests.Add(t);}
+    static byte[] Pixels(BitmapSource frame){var converted=new FormatConvertedBitmap(frame,PixelFormats.Pbgra32,null,0);byte[] v=new byte[frame.PixelWidth*frame.PixelHeight*4];converted.CopyPixels(v,frame.PixelWidth*4,0);return v;}
+    static IEnumerable<string> Wording(DependencyObject node){var text=node as TextBlock;if(text!=null)yield return text.Text;var content=node as ContentControl;if(content!=null&&content.Content is string)yield return (string)content.Content;var window=node as Window;if(window!=null)yield return window.Title;for(int i=0;i<VisualTreeHelper.GetChildrenCount(node);i++)foreach(string value in Wording(VisualTreeHelper.GetChild(node,i)))yield return value;}
+    public static int Run(string manifest,string output){
+        Directory.CreateDirectory(output);PetSettings.UsePreviewProfile(Path.Combine(output,"isolated-"+Guid.NewGuid().ToString("N")));report=new LivingReport{scope="Customer package identity, original colors, export continuity and bundled-pet autostart resolution"};string fixture=Path.Combine(output,"customer-assets");Directory.CreateDirectory(fixture);string path=Path.Combine(fixture,"preview-pet.json");var spec=new SkinManifest{name="团团",sheet="pet.png",columns=1,rows=1,animation="ragdoll-live-v2",customerEdition=true,disableGreenSpill=true};
+        byte[] px=new byte[256*256*4];for(int i=0;i<px.Length;i+=4){px[i]=80;px[i+1]=125;px[i+2]=90;px[i+3]=255;}var frame=BitmapSource.Create(256,256,96,96,PixelFormats.Pbgra32,null,px,256*4);var png=new PngBitmapEncoder();png.Frames.Add(BitmapFrame.Create(frame));using(var f=File.Create(Path.Combine(fixture,"pet.png")))png.Save(f);using(var f=File.Create(path))new DataContractJsonSerializer(typeof(SkinManifest)).WriteObject(f,spec);
+        Check("专属包读取客户宠物名和客户版标记",delegate{var skin=PetSkin.Load(path);Assert(skin.Name=="团团"&&skin.CustomerEdition&&skin.Living!=null,"专属包仍被当作布偶猫试用");});
+        Check("客户已验收的毛色和绿色眼睛不再套用样品去绿",delegate{var skin=PetSkin.Load(path);Assert(skin.DisableGreenSpill&&Pixels(skin.Frames[0]).SequenceEqual(px),"客户原色被布偶猫样品颜色处理覆盖");});
+        Check("素材导出导入保留客户版与颜色配置",delegate{var skin=PetSkin.Load(path);string zip=Path.Combine(output,"customer.zip");skin.Export(zip);var back=PetSkin.Load(PetSkin.Import(zip,Path.Combine(output,"imported")));Assert(back.CustomerEdition&&back.DisableGreenSpill&&back.Name=="团团"&&Pixels(back.Frames[0]).SequenceEqual(px),"客户配置或颜色在导入导出中丢失");});
+        Check("开机参数仍加载包内宠物，其他命令不被改写",delegate{var resolved=Program.WithBundledPet(new[]{"--background"},fixture);Assert(resolved.Length==2&&resolved[0]=="--preview-pet"&&resolved[1]==path,"开机后加载成默认小橘");Assert(Program.WithBundledPet(new string[0],fixture)[1]==path,"双击不加载专属宠物");var args=new[]{"--self-test",output};Assert(Object.ReferenceEquals(Program.WithBundledPet(args,fixture),args),"功能命令被专属加载覆盖");});
+        Check("正式目录和开机启动优先使用桌宠资料配置",delegate{string data=Path.Combine(fixture,"桌宠资料");Directory.CreateDirectory(data);string current=Path.Combine(data,"pet.json");File.Copy(path,current,true);foreach(var args in new[]{new string[0],new[]{"--background"}}){var resolved=Program.WithBundledPet(args,fixture);Assert(resolved[0]=="--pet"&&resolved[1]==current,"正式入口仍依赖内部配置名称");}});
+        Check("客户存档位于本机应用数据且不会误判内部模式",delegate{PetSettings.UseCustomerProfile("customer-check-001");Assert(!PetSettings.IsPreviewProfile&&PetSettings.Root==Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"毛孩子桌宠","customer-check-001"),"存档仍写入交付文件夹");bool blocked=false;try{PetSettings.UseCustomerProfile("../outside");}catch{blocked=true;}Assert(blocked,"存档标识允许路径穿越");PetSettings.UsePreviewProfile(Path.Combine(output,"ui-profile"));});
+        Check("正式设置和小记没有内部文案与不可用功能入口",delegate{if(Application.Current==null)new Application{ShutdownMode=ShutdownMode.OnExplicitShutdown};var c=new PetController(Application.Current);c.Skin=PetSkin.Load(manifest);c.Skin.CustomerEdition=true;PetSettings.UseCustomerProfile("product-review-"+Guid.NewGuid().ToString("N"));c.Settings.Name="团团";c.ConfigureMotions();c.Pet=new PetWindow(c);var w=new SettingsWindow(c);var view=(FrameworkElement)w.Content;view.Measure(new Size(960,740));view.Arrange(new Rect(0,0,960,740));view.UpdateLayout();string words=w.Title+"\n"+string.Join("\n",Wording(view));foreach(string term in new[]{"测试","试用","预览","样品","样例","调试","尚未","本机互动","连续动画","实时驱动"})Assert(!words.Contains(term),"可见文案泄漏："+term);Assert(!words.Contains("导出表情包")&&!words.Contains("四处走动"),"保留未开放入口");foreach(string action in new[]{"♡ 摸摸头","碰鼻尖","碰爪爪","逗毛线球","打个哈欠","舔舔毛","撒个娇","坐起来看看","站起来看看","趴着打个盹","伸伸前爪","拿起逗猫棒","拿起小毛刷"})Assert(!words.Contains(action),"设置面板仍包含动作按钮："+action);Assert(words.Contains("我们的相处")&&words.Contains("陪伴偏好"),"精简设置缺少相处记录或偏好入口");Assert(words.Contains("开机时自动陪伴")&&words.Contains("团团"),"正式设置缺少身份或开机选项");var memories=new PetLifeWindow(c);var noteView=(FrameworkElement)memories.Content;noteView.Measure(new Size(520,590));noteView.Arrange(new Rect(0,0,520,590));noteView.UpdateLayout();string notes=string.Join("\n",Wording(noteView));Assert(!notes.Contains("测试")&&!notes.Contains("试用"),"小记泄漏内部文案");memories.Close();w.Close();c.Pet.Close();c.Dispose();string own=Path.GetFullPath(PetSettings.Root),parent=Path.GetFullPath(Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData),"毛孩子桌宠"));if(Path.GetDirectoryName(own)==parent&&Path.GetFileName(own).StartsWith("product-review-"))Directory.Delete(own,true);});
+        using(var f=File.Create(Path.Combine(output,"customer-test-report.json")))new DataContractJsonSerializer(typeof(LivingReport)).WriteObject(f,report);return report.failed==0?0:1;
+    }
+}
+}
